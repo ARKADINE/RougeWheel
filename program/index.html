@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>RougeWheel - Prototype</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #0d1117;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-family: 'Courier New', monospace;
+  color: #e6edf3;
+}
+.container {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 16px;
+}
+canvas {
+  display: block;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  cursor: crosshair;
+}
+.panel {
+  width: 190px;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.panel-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #e94560;
+  letter-spacing: 2px;
+  text-align: center;
+}
+.panel-sub {
+  font-size: 10px;
+  color: #484f58;
+  text-align: center;
+  margin-top: -8px;
+}
+.coins-row {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.coins-icon { font-size: 16px; }
+.coins-label { font-size: 11px; color: #8b949e; }
+.coins-value { font-size: 20px; color: #f0c040; font-weight: bold; margin-left: auto; }
+.phase-badge {
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 11px;
+  text-align: center;
+  color: #9ca3af;
+  letter-spacing: 1px;
+}
+.phase-badge.active { border-color: #e94560; color: #e94560; }
+.section-label {
+  font-size: 10px;
+  color: #8b949e;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.pocket-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+.pocket-btn {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  color: #e6edf3;
+  padding: 6px 2px;
+  font-size: 11px;
+  font-family: monospace;
+  cursor: pointer;
+  text-align: center;
+  line-height: 1.4;
+  transition: background 0.1s, border-color 0.1s;
+}
+.pocket-btn:hover { border-color: #58a6ff; }
+.pocket-btn.selected { border-color: var(--color); color: var(--color); background: #161b22; }
+.bet-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.bet-row label { font-size: 11px; color: #8b949e; }
+.bet-row input[type=range] {
+  width: 100%;
+  accent-color: #e94560;
+  cursor: pointer;
+}
+.bet-display {
+  font-size: 16px;
+  color: #f0c040;
+  text-align: right;
+}
+.btn {
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: 5px;
+  font-family: monospace;
+  font-size: 12px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-primary { background: #e94560; color: white; }
+.btn-primary:hover:not(:disabled) { background: #c7364f; }
+.btn-secondary { background: #21262d; color: #8b949e; border: 1px solid #30363d; }
+.btn-secondary:hover:not(:disabled) { background: #30363d; color: #e6edf3; }
+.wall-info {
+  font-size: 11px;
+  color: #8b949e;
+  line-height: 1.6;
+}
+.wall-info span { color: #f0c040; }
+.result-box {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.8;
+  min-height: 70px;
+}
+.result-box.win { border-color: #22c55e; }
+.result-box.lose { border-color: #ef4444; }
+.win-text { color: #4ade80; font-weight: bold; }
+.lose-text { color: #f87171; font-weight: bold; }
+.hint {
+  font-size: 10px;
+  color: #484f58;
+  line-height: 1.6;
+  border-top: 1px solid #21262d;
+  padding-top: 8px;
+}
+.section { display: flex; flex-direction: column; gap: 6px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <canvas id="c" width="400" height="610"></canvas>
+  <div class="panel">
+    <div class="panel-title">RougeWheel</div>
+    <div class="panel-sub">prototype v0.1</div>
+
+    <div class="coins-row">
+      <span class="coins-icon">🪙</span>
+      <span class="coins-label">COINS</span>
+      <span class="coins-value" id="coinsVal">100</span>
+    </div>
+
+    <div class="phase-badge" id="phaseBadge">PHASE: BET</div>
+
+    <!-- BET UI -->
+    <div id="uiBet" class="section">
+      <span class="section-label">ポケット選択</span>
+      <div class="pocket-grid" id="pocketGrid"></div>
+      <div class="bet-row">
+        <label>ベット額: <span class="bet-display" id="betVal">10</span></label>
+        <input type="range" id="betRange" min="5" max="50" step="5" value="10">
+      </div>
+      <button class="btn btn-primary" id="btnBet" disabled>ベット確定</button>
+    </div>
+
+    <!-- PLACE UI -->
+    <div id="uiPlace" class="section" style="display:none">
+      <span class="section-label">壁を配置</span>
+      <div class="wall-info">
+        配置: <span id="wallCount">0</span> / 3 本<br>
+        ドラッグ: 壁を引く<br>
+        右クリック: 最後の壁を削除
+      </div>
+      <button class="btn btn-primary" id="btnLaunch">発射！</button>
+      <button class="btn btn-secondary" id="btnClear">壁リセット</button>
+    </div>
+
+    <!-- RESULT UI -->
+    <div id="uiResult" class="section" style="display:none">
+      <div class="result-box" id="resultBox"></div>
+      <button class="btn btn-primary" id="btnNext">次のラウンド</button>
+    </div>
+
+    <div class="hint" id="hintText">ポケットを選んでベットしよう！</div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+// Layout constants
+const AX = 50, AY = 80, AW = 300, AH = 430;
+const NPOCKETS = 6;
+const PW = AW / NPOCKETS;   // pocket width = 50
+const PH = 32;
+const BALL_R = 9;
+const GRAVITY = 0.22;
+const RESTITUTION = 0.62;
+const FRICTION = 0.995;
+const MAX_WALLS = 3;
+
+// Pocket definitions
+const POCKET_DEF = [
+  { label: '1', mult: 4,  color: '#ef4444' },
+  { label: '2', mult: 2,  color: '#f97316' },
+  { label: '3', mult: 6,  color: '#eab308' },
+  { label: '4', mult: 6,  color: '#22c55e' },
+  { label: '5', mult: 2,  color: '#3b82f6' },
+  { label: '6', mult: 4,  color: '#a855f7' },
+];
+const pockets = POCKET_DEF.map((d, i) => ({
+  ...d,
+  x: AX + i * PW,
+  y: AY + AH,
+  cx: AX + i * PW + PW / 2,
+}));
+
+// Pegs (staggered Plinko layout)
+const PEGS = [];
+for (let row = 0; row < 5; row++) {
+  const even = row % 2 === 0;
+  const cols = even ? 5 : 4;
+  for (let col = 0; col < cols; col++) {
+    PEGS.push({
+      x: even ? AX + PW/2 + col * PW : AX + PW + col * PW,
+      y: AY + 105 + row * 58,
+      r: 5,
+    });
+  }
+}
+
+// Game state
+let G = {
+  phase: 'bet',
+  coins: 100,
+  bet: 10,
+  betPocket: -1,
+  walls: [],
+  ball: null,
+  dragging: false,
+  drag0: null,
+  drag1: null,
+  resultPocket: -1,
+  raf: null,
+};
+
+// UI elements
+const coinsVal    = document.getElementById('coinsVal');
+const phaseBadge  = document.getElementById('phaseBadge');
+const uiBet       = document.getElementById('uiBet');
+const uiPlace     = document.getElementById('uiPlace');
+const uiResult    = document.getElementById('uiResult');
+const btnBet      = document.getElementById('btnBet');
+const btnLaunch   = document.getElementById('btnLaunch');
+const btnClear    = document.getElementById('btnClear');
+const btnNext     = document.getElementById('btnNext');
+const betRange    = document.getElementById('betRange');
+const betVal      = document.getElementById('betVal');
+const wallCount   = document.getElementById('wallCount');
+const resultBox   = document.getElementById('resultBox');
+const hintText    = document.getElementById('hintText');
+
+// Build pocket buttons
+const pocketGrid = document.getElementById('pocketGrid');
+pockets.forEach((p, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'pocket-btn';
+  btn.style.setProperty('--color', p.color);
+  btn.innerHTML = `${p.label}<br><small style="color:#8b949e">×${p.mult}</small>`;
+  btn.onclick = () => {
+    G.betPocket = i;
+    document.querySelectorAll('.pocket-btn').forEach((b, j) => {
+      b.classList.toggle('selected', j === i);
+    });
+    btnBet.disabled = false;
+    hintText.textContent = `ポケット ${p.label}（×${p.mult}）に賭ける。確定ボタンを押そう！`;
+  };
+  pocketGrid.appendChild(btn);
+});
+
+betRange.oninput = () => {
+  G.bet = +betRange.value;
+  betVal.textContent = G.bet;
+};
+
+btnBet.onclick = () => {
+  G.phase = 'place';
+  G.walls = [];
+  wallCount.textContent = '0';
+  updateUI();
+  hintText.textContent = 'ドラッグして壁を配置しよう（最大3本）。準備できたら発射！';
+};
+
+btnLaunch.onclick = () => {
+  if (G.raf) cancelAnimationFrame(G.raf);
+  G.phase = 'launch';
+  G.ball = {
+    x: AX + AW/2 + (Math.random() - 0.5) * 20,
+    y: AY + 22,
+    vx: (Math.random() - 0.5) * 1.5,
+    vy: 0.5,
+  };
+  updateUI();
+  hintText.textContent = '物理演算で落下中...';
+  loop();
+};
+
+btnClear.onclick = () => {
+  G.walls = [];
+  wallCount.textContent = '0';
+  draw();
+};
+
+btnNext.onclick = () => {
+  if (G.coins <= 0) {
+    G.coins = 100;
+    coinsVal.textContent = 100;
+  }
+  G.phase = 'bet';
+  G.betPocket = -1;
+  G.ball = null;
+  G.walls = [];
+  G.resultPocket = -1;
+  document.querySelectorAll('.pocket-btn').forEach(b => b.classList.remove('selected'));
+  btnBet.disabled = true;
+  betRange.value = 10;
+  G.bet = 10;
+  betVal.textContent = 10;
+  updateUI();
+  hintText.textContent = 'ポケットを選んでベットしよう！';
+  draw();
+};
+
+// Canvas interaction
+canvas.addEventListener('mousedown', e => {
+  if (G.phase !== 'place') return;
+  if (e.button === 2) {
+    G.walls.pop();
+    wallCount.textContent = G.walls.length;
+    draw();
+    return;
+  }
+  if (G.walls.length >= MAX_WALLS) return;
+  const p = pos(e);
+  if (!inArena(p)) return;
+  G.dragging = true;
+  G.drag0 = p;
+  G.drag1 = p;
+});
+
+canvas.addEventListener('mousemove', e => {
+  if (!G.dragging) return;
+  G.drag1 = clamp(pos(e));
+  draw();
+});
+
+canvas.addEventListener('mouseup', e => {
+  if (!G.dragging) return;
+  G.dragging = false;
+  const p = clamp(pos(e));
+  const dx = p.x - G.drag0.x, dy = p.y - G.drag0.y;
+  if (dx*dx + dy*dy > 400) {
+    G.walls.push({ x1: G.drag0.x, y1: G.drag0.y, x2: p.x, y2: p.y });
+    wallCount.textContent = G.walls.length;
+  }
+  G.drag0 = G.drag1 = null;
+  draw();
+});
+
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+function pos(e) {
+  const r = canvas.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+function inArena(p) {
+  return p.x >= AX && p.x <= AX+AW && p.y >= AY && p.y <= AY+AH;
+}
+function clamp(p) {
+  return {
+    x: Math.max(AX+4, Math.min(AX+AW-4, p.x)),
+    y: Math.max(AY+4, Math.min(AY+AH-4, p.y)),
+  };
+}
+
+// Physics
+function segCollide(cx, cy, r, x1, y1, x2, y2) {
+  const dx = x2-x1, dy = y2-y1;
+  const len2 = dx*dx + dy*dy;
+  if (len2 < 0.001) return null;
+  const t = Math.max(0, Math.min(1, ((cx-x1)*dx + (cy-y1)*dy) / len2));
+  const px = x1 + t*dx, py = y1 + t*dy;
+  const ex = cx-px, ey = cy-py;
+  const d2 = ex*ex + ey*ey;
+  if (d2 < r*r && d2 > 1e-6) {
+    const d = Math.sqrt(d2);
+    return { nx: ex/d, ny: ey/d, depth: r-d };
+  }
+  return null;
+}
+
+function reflect(ball, nx, ny, depth) {
+  ball.x += nx * depth;
+  ball.y += ny * depth;
+  const dot = ball.vx*nx + ball.vy*ny;
+  if (dot < 0) {
+    ball.vx -= (1 + RESTITUTION) * dot * nx;
+    ball.vy -= (1 + RESTITUTION) * dot * ny;
+  }
+}
+
+function step() {
+  const b = G.ball;
+  b.vy += GRAVITY;
+  b.vx *= FRICTION;
+  b.vy *= FRICTION;
+  b.x += b.vx;
+  b.y += b.vy;
+
+  // Arena boundary
+  if (b.x - BALL_R < AX) { b.x = AX + BALL_R; b.vx = Math.abs(b.vx) * RESTITUTION; }
+  if (b.x + BALL_R > AX + AW) { b.x = AX+AW - BALL_R; b.vx = -Math.abs(b.vx) * RESTITUTION; }
+  if (b.y - BALL_R < AY) { b.y = AY + BALL_R; b.vy = Math.abs(b.vy) * RESTITUTION; }
+
+  // Pegs
+  for (const p of PEGS) {
+    const dx = b.x - p.x, dy = b.y - p.y;
+    const d = Math.sqrt(dx*dx + dy*dy);
+    const min = BALL_R + p.r;
+    if (d < min && d > 0.001) {
+      const nx = dx/d, ny = dy/d;
+      b.x += nx * (min - d);
+      b.y += ny * (min - d);
+      const dot = b.vx*nx + b.vy*ny;
+      if (dot < 0) {
+        b.vx -= (1 + RESTITUTION) * dot * nx;
+        b.vy -= (1 + RESTITUTION) * dot * ny;
+      }
+    }
+  }
+
+  // Player walls
+  for (const w of G.walls) {
+    const c = segCollide(b.x, b.y, BALL_R, w.x1, w.y1, w.x2, w.y2);
+    if (c) reflect(b, c.nx, c.ny, c.depth);
+  }
+
+  // Pocket detection
+  if (b.y + BALL_R >= AY + AH) {
+    const idx = pockets.findIndex(p => b.x >= p.x && b.x < p.x + PW);
+    if (idx !== -1) {
+      G.ball = null;
+      G.resultPocket = idx;
+      G.phase = 'result';
+      applyResult(idx);
+      updateUI();
+      draw();
+      return false; // stop loop
+    } else {
+      b.y = AY + AH - BALL_R;
+      b.vy = -Math.abs(b.vy) * RESTITUTION;
+    }
+  }
+  return true;
+}
+
+function loop() {
+  if (!step()) return;
+  draw();
+  G.raf = requestAnimationFrame(loop);
+}
+
+function applyResult(idx) {
+  const p = pockets[idx];
+  const betP = pockets[G.betPocket];
+  const won = idx === G.betPocket;
+  if (won) {
+    const gain = G.bet * p.mult;
+    G.coins += gain;
+    resultBox.className = 'result-box win';
+    resultBox.innerHTML = `<span class="win-text">🎉 当たり！</span><br>ポケット ${p.label}（×${p.mult}）<br><span class="win-text">+${gain} コイン！</span>`;
+    hintText.textContent = `🎊 ${gain}コイン獲得！残高: ${G.coins}`;
+  } else {
+    G.coins -= G.bet;
+    if (G.coins < 0) G.coins = 0;
+    resultBox.className = 'result-box lose';
+    resultBox.innerHTML = `<span class="lose-text">😢 ハズレ...</span><br>ボール: ポケット ${p.label}<br>ベット: ポケット ${betP.label}<br><span class="lose-text">-${G.bet} コイン</span>`;
+    hintText.textContent = G.coins <= 0 ? 'ゲームオーバー！リスタートしよう。' : `残高: ${G.coins} コイン`;
+  }
+  coinsVal.textContent = G.coins;
+  btnNext.textContent = G.coins <= 0 ? 'リスタート' : '次のラウンド';
+}
+
+function updateUI() {
+  const labels = { bet: 'BET', place: 'PLACE', launch: 'LAUNCH', result: 'RESULT' };
+  phaseBadge.textContent = `PHASE: ${labels[G.phase]}`;
+  phaseBadge.className = 'phase-badge' + (G.phase !== 'bet' ? ' active' : '');
+  uiBet.style.display    = G.phase === 'bet'    ? '' : 'none';
+  uiPlace.style.display  = G.phase === 'place'  ? '' : 'none';
+  uiResult.style.display = G.phase === 'result' ? '' : 'none';
+}
+
+// Rendering
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Background
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Arena bg
+  ctx.fillStyle = '#161b22';
+  ctx.fillRect(AX, AY, AW, AH + PH);
+
+  // Launch indicator
+  if (G.phase === 'bet' || G.phase === 'place') {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.setLineDash([4, 5]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(AX + AW/2, AY);
+    ctx.lineTo(AX + AW/2, AY + 55);
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath();
+    ctx.arc(AX + AW/2, AY + 16, 7, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#0d1117';
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('▼', AX + AW/2, AY + 20);
+  }
+
+  // Pegs
+  for (const p of PEGS) {
+    ctx.fillStyle = '#1f6feb';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#58a6ff';
+    ctx.beginPath();
+    ctx.arc(p.x - 1.5, p.y - 1.5, 2, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // Player walls
+  for (const w of G.walls) {
+    ctx.strokeStyle = '#f0c040';
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(w.x1, w.y1);
+    ctx.lineTo(w.x2, w.y2);
+    ctx.stroke();
+    ctx.strokeStyle = '#fde68a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(w.x1, w.y1);
+    ctx.lineTo(w.x2, w.y2);
+    ctx.stroke();
+  }
+
+  // Drag preview
+  if (G.dragging && G.drag0 && G.drag1) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(240,192,64,0.45)';
+    ctx.lineWidth = 4;
+    ctx.setLineDash([6, 4]);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(G.drag0.x, G.drag0.y);
+    ctx.lineTo(G.drag1.x, G.drag1.y);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Pockets
+  for (let i = 0; i < pockets.length; i++) {
+    const p = pockets[i];
+    const isBet = i === G.betPocket;
+    const isResult = i === G.resultPocket && G.phase === 'result';
+
+    if (isResult) {
+      ctx.fillStyle = p.color + '55';
+    } else if (isBet) {
+      ctx.fillStyle = p.color + '22';
+    } else {
+      ctx.fillStyle = '#0d1117';
+    }
+    ctx.fillRect(p.x+1, p.y+1, PW-2, PH-2);
+
+    ctx.strokeStyle = isResult ? p.color : (isBet ? p.color + 'aa' : '#30363d');
+    ctx.lineWidth = isResult ? 2 : (isBet ? 1.5 : 1);
+    ctx.strokeRect(p.x+1, p.y+1, PW-2, PH-2);
+
+    ctx.fillStyle = isBet || isResult ? p.color : '#8b949e';
+    ctx.font = `bold 12px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText(p.label, p.cx, p.y + 13);
+    ctx.fillStyle = '#484f58';
+    ctx.font = '9px monospace';
+    ctx.fillText(`×${p.mult}`, p.cx, p.y + 26);
+  }
+
+  // Arena border
+  ctx.strokeStyle = '#30363d';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(AX, AY, AW, AH);
+
+  // Ball
+  if (G.ball) {
+    const b = G.ball;
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath();
+    ctx.ellipse(b.x+2, b.y+3, BALL_R, BALL_R*0.45, 0, 0, Math.PI*2);
+    ctx.fill();
+    // Ball body
+    const g = ctx.createRadialGradient(b.x-3, b.y-3, 1, b.x, b.y, BALL_R);
+    g.addColorStop(0, '#f0f0f0');
+    g.addColorStop(1, '#b0b0b0');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, BALL_R, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = '#888';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+
+  // Title
+  ctx.fillStyle = '#e94560';
+  ctx.font = 'bold 20px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('RougeWheel', canvas.width/2, 40);
+  ctx.fillStyle = '#484f58';
+  ctx.font = '10px monospace';
+  ctx.fillText('prototype v0.1', canvas.width/2, 56);
+}
+
+// Start
+draw();
+</script>
+</body>
+</html>
