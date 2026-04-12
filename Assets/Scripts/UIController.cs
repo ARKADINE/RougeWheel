@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 public class UIController : MonoBehaviour
 {
@@ -91,6 +92,11 @@ public class UIController : MonoBehaviour
         _betPanel.SetActive(false);
         _placePanel.SetActive(false);
         _resultPanel.SetActive(false);
+
+        // EventSystem is required for Button clicks
+        var eventSysObj = new GameObject("EventSystem");
+        eventSysObj.AddComponent<EventSystem>();
+        eventSysObj.AddComponent<StandaloneInputModule>();
     }
 
     void OnPhaseChanged(GameManager.Phase phase)
@@ -103,18 +109,16 @@ public class UIController : MonoBehaviour
 
         if (phase == GameManager.Phase.Betting)
         {
-            foreach (var p in _pockets)
-                p.SetSelected(false);
-            _infoText.text = "";
-        }
-        else if (phase == GameManager.Phase.Betting || _gm.SelectedPocket >= 0)
-        {
-            // Update selection highlight
-            for (int i = 0; i < _pockets.Length; i++)
-                _pockets[i].SetSelected(i == _gm.SelectedPocket);
-
-            if (_gm.SelectedPocket >= 0)
+            if (_gm.SelectedPocket < 0)
             {
+                foreach (var p in _pockets)
+                    p.SetSelected(false);
+                _infoText.text = "";
+            }
+            else
+            {
+                for (int i = 0; i < _pockets.Length; i++)
+                    _pockets[i].SetSelected(i == _gm.SelectedPocket);
                 var sp = _pockets[_gm.SelectedPocket];
                 _infoText.text = $"Pocket {sp.Index}  ×{sp.Multiplier}";
             }
@@ -123,9 +127,6 @@ public class UIController : MonoBehaviour
         {
             _placementsText.text = $"Placements: {_gm.PlacementsRemaining}";
         }
-
-        if (phase == GameManager.Phase.Placing)
-            _placementsText.text = $"Placements: {_gm.PlacementsRemaining}";
     }
 
     void OnCoinsChanged(int coins)
