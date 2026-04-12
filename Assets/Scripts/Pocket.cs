@@ -2,26 +2,33 @@ using UnityEngine;
 
 public class Pocket : MonoBehaviour
 {
-    public int Index { get; private set; }
-    public int Multiplier { get; private set; }
+    public int   Index      { get; private set; }
+    public int   Multiplier { get; private set; }
+    public Color PocketColor { get; private set; }
 
     SpriteRenderer _sr;
-    Color _baseColor;
-    static readonly Color SelectedColor = new(1f, 0.85f, 0f);
 
-    public void Initialize(int index, int multiplier, bool isRed)
+    public void Initialize(int index, int multiplier, Color color, SpriteRenderer sr)
     {
-        Index = index;
-        Multiplier = multiplier;
-        _baseColor = isRed ? new Color(0.75f, 0.1f, 0.1f) : new Color(0.15f, 0.15f, 0.15f);
-        _sr = GetComponentInChildren<SpriteRenderer>();
-        if (_sr != null) _sr.color = _baseColor;
+        Index       = index;
+        Multiplier  = multiplier;
+        PocketColor = color;
+        _sr         = sr;
+        if (_sr != null) _sr.color = color * 0.25f; // dim default
     }
 
+    /// <summary>選択中（ベット確定前）の表示</summary>
     public void SetSelected(bool selected)
     {
-        if (_sr != null)
-            _sr.color = selected ? SelectedColor : _baseColor;
+        if (_sr == null) return;
+        _sr.color = selected ? PocketColor * 0.6f : PocketColor * 0.25f;
+    }
+
+    /// <summary>ボールが落ちたポケットを明るく表示</summary>
+    public void SetResult(bool isResult)
+    {
+        if (_sr == null) return;
+        _sr.color = isResult ? PocketColor : PocketColor * 0.25f;
     }
 
     void OnMouseDown()

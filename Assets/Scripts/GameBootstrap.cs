@@ -1,51 +1,57 @@
 using UnityEngine;
 
 /// <summary>
-/// Programmatically builds the entire game scene at runtime.
-/// Uses [RuntimeInitializeOnLoadMethod] so it works even if the scene
-/// reference is broken — no manual "Attach script" needed.
+/// HTML5 prototype に忠実な構成でシーンを構築する。
+/// 6ポケット・ペグ配置・ドラッグ壁・同配色。
 /// </summary>
 public class GameBootstrap : MonoBehaviour
 {
-    // ── Self-bootstrap (runs regardless of scene GUID) ───────
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void EnsureBootstrap()
     {
-        // If the scene already has a working GameBootstrap, Start() will
-        // handle it. Otherwise, create one now.
         if (FindFirstObjectByType<GameBootstrap>() != null) return;
         new GameObject("[GameBootstrap]").AddComponent<GameBootstrap>();
     }
 
-    // ── Arena constants ──────────────────────────────────────
-    const float HALF_W    = 4f;     // half arena width  (total 8 units)
-    const float ARENA_TOP = 6.5f;
-    const float ARENA_BOT = -7f;
-    const float POCKET_Y  = -6.3f;
-    const int   POCKETS   = 8;
+    // ── Arena (HTML5: 300×430 px → Unity: 6×8.6 u) ──────────
+    const float HALF_W    = 3f;
+    const float ARENA_TOP = 4.3f;
+    const float POCKET_Y  = -4.3f;   // pocket centre
+    const float POCKET_H  = 0.64f;   // 32/430 * 8.6
+    const float ARENA_BOT = -5.3f;
+    const int   NPOCKETS  = 6;
 
-    static readonly int[]   Multipliers = { 2, 5, 1, 3, 3, 1, 5, 2 };
+    // HTML5 pocket defs
+    static readonly int[] PocketMults = { 4, 2, 6, 6, 2, 4 };
+    static readonly Color[] PocketColors =
+    {
+        new(0.94f, 0.27f, 0.27f), // #ef4444 red
+        new(0.98f, 0.60f, 0.09f), // #f97316 orange
+        new(0.92f, 0.70f, 0.03f), // #eab308 yellow
+        new(0.13f, 0.77f, 0.33f), // #22c55e green
+        new(0.23f, 0.51f, 1.00f), // #3b82f6 blue
+        new(0.66f, 0.33f, 0.97f), // #a855f7 purple
+    };
 
-    PhysicsMaterial2D _wallMat;
+    PhysicsMaterial2D _bounceMat;
     static Sprite _pixel;
 
-    // ── Entry point ──────────────────────────────────────────
     void Start()
     {
-        _wallMat = new PhysicsMaterial2D { bounciness = 0.45f, friction = 0.1f };
+        _bounceMat = new PhysicsMaterial2D { bounciness = 0.62f, friction = 0.05f };
 
         ConfigureCamera();
         BuildArena();
+        BuildPegs();
         var pockets = BuildPockets();
 
-        // Managers
         var gm = new GameObject("GameManager").AddComponent<GameManager>();
         var ps = new GameObject("PlacementSystem").AddComponent<PlacementSystem>();
-        ps.Setup(HALF_W, POCKET_Y, ARENA_TOP);
-        var ui = new GameObject("UIController").AddComponent<UIController>();
-        ui.Setup(gm, pockets, ps);
+        ps.Setup(HALF_W, POCKET_Y + POCKET_H * 0.5f, ARENA_TOP, _bounceMat);
 
-        // Wire launch → ball spawn
+        var ui = new GameObject("UIController").AddComponent<UIController>();
+        ui.Setup(gm, pockets, PocketColors, ps);
+
         gm.OnPhaseChanged += phase =>
         {
             if (phase == GameManager.Phase.Launching)
@@ -59,74 +65,118 @@ public class GameBootstrap : MonoBehaviour
     void ConfigureCamera()
     {
         var cam = Camera.main;
-        cam.orthographic = true;
-        cam.orthographicSize = 8f;
-        cam.backgroundColor = new Color(0.02f, 0.06f, 0.02f);
-        cam.transform.position = new Vector3(0, -0.5f, -10);
+        cam.orthographic    = true;
+        cam.orthographicSize = 5.2f;
+        cam.backgroundColor = new Color(0.051f, 0.067f, 0.090f); // #0d1117
+        // Shift left so right side of screen is free for the UI panel
+        cam.transform.position = new Vector3(-1.5f, 0f, -10f);
     }
 
     // ── Arena ────────────────────────────────────────────────
     void BuildArena()
     {
-        // Dark green background
-        MakeQuad("Background", Vector3.zero, new Vector2(HALF_W * 2 - 0.2f, 14.5f),
-            new Color(0.04f, 0.12f, 0.04f), -10);
+        float totalH = ARENA_TOP - ARENA_BOT;
 
-        // Boundary walls (physics + visual)
-        MakeWall("LeftWall",  new Vector3(-HALF_W, -0.5f, 0), new Vector2(0.2f, 14.5f), _wallMat);
-        MakeWall("RightWall", new Vector3( HALF_W, -0.5f, 0), new Vector2(0.2f, 14.5f), _wallMat);
-        MakeWall("TopWall",   new Vector3(0, ARENA_TOP,   0), new Vector2(HALF_W * 2, 0.2f), _wallMat);
+        // Background
+        MakeQuad("BG", new Vector3(0, (ARENA_TOP + ARENA_BOT) * 0.5f, 0),
+            new Vector2(HALF_W * 2, totalH), new Color(0.086f, 0.106f, 0.133f), -10);
+
+        // Boundary walls
+        MakeWall("LeftWall",  new Vector3(-HALF_W - 0.1f, 0, 0), new Vector2(0.2f, totalH + 1f));
+        MakeWall("RightWall", new Vector3( HALF_W + 0.1f, 0, 0), new Vector2(0.2f, totalH + 1f));
+        MakeWall("TopWall",   new Vector3(0, ARENA_TOP + 0.1f, 0), new Vector2(HALF_W * 2 + 0.4f, 0.2f));
+        MakeWall("Floor",     new Vector3(0, ARENA_BOT, 0), new Vector2(HALF_W * 2 + 0.4f, 0.2f));
 
         // Pocket separators
-        float pw = HALF_W * 2f / POCKETS;
-        for (int i = 0; i <= POCKETS; i++)
+        float pw = HALF_W * 2f / NPOCKETS;
+        for (int i = 0; i <= NPOCKETS; i++)
         {
             float x = -HALF_W + pw * i;
-            MakeWall($"Sep_{i}", new Vector3(x, POCKET_Y - 0.2f, 0), new Vector2(0.1f, 0.6f), _wallMat,
-                new Color(0.55f, 0.55f, 0.55f));
+            var sep = new GameObject($"Sep_{i}");
+            sep.transform.position = new Vector3(x, POCKET_Y, 0);
+            var bc = sep.AddComponent<BoxCollider2D>();
+            bc.size = new Vector2(0.06f, POCKET_H + 0.2f);
+            bc.sharedMaterial = _bounceMat;
+            MakeQuad($"Sep_{i}_V", sep.transform.position,
+                new Vector2(0.06f, POCKET_H + 0.2f), new Color(0.19f, 0.21f, 0.24f), 2);
         }
 
-        // Invisible floor (catches stray balls)
-        MakeWall("Floor", new Vector3(0, ARENA_BOT, 0), new Vector2(HALF_W * 2, 0.2f), _wallMat,
-            new Color(0.1f, 0.1f, 0.1f));
+        // Launch guide (dashed look — single semi-transparent quad)
+        MakeQuad("LaunchGuide",
+            new Vector3(0, ARENA_TOP - 1.4f, 0),
+            new Vector2(0.04f, 2.4f),
+            new Color(1f, 1f, 1f, 0.12f), 2);
+    }
 
-        // Launch guide lines
-        MakeQuad("Guide_L", new Vector3(-0.5f, (ARENA_TOP + POCKET_Y) * 0.5f, 0),
-            new Vector2(0.03f, ARENA_TOP - POCKET_Y), new Color(0.3f, 0.5f, 0.3f, 0.4f), 2);
-        MakeQuad("Guide_R", new Vector3( 0.5f, (ARENA_TOP + POCKET_Y) * 0.5f, 0),
-            new Vector2(0.03f, ARENA_TOP - POCKET_Y), new Color(0.3f, 0.5f, 0.3f, 0.4f), 2);
+    // ── Pegs (staggered Plinko, HTML5 proportions) ────────────
+    void BuildPegs()
+    {
+        float arenaH  = ARENA_TOP - (POCKET_Y - POCKET_H * 0.5f); // ≈ 8.94
+        float firstY  = ARENA_TOP - 0.244f * arenaH;
+        float rowStep = 0.135f * arenaH;
+        float pw      = HALF_W * 2f / NPOCKETS; // = 1 unit
+        float pegR    = 0.15f;
+
+        var pegMat = new PhysicsMaterial2D { bounciness = 0.62f, friction = 0f };
+
+        for (int row = 0; row < 5; row++)
+        {
+            bool even = (row % 2 == 0);
+            int  cols = even ? 5 : 4;
+            float y   = firstY - row * rowStep;
+
+            for (int col = 0; col < cols; col++)
+            {
+                float x = even
+                    ? -HALF_W + pw * 0.5f + col * pw   // 5 pegs: half-pocket offset
+                    : -HALF_W + pw         + col * pw;  // 4 pegs: one-pocket offset
+
+                var peg = new GameObject($"Peg_{row}_{col}");
+                peg.transform.position = new Vector3(x, y, 0);
+
+                var cc = peg.AddComponent<CircleCollider2D>();
+                cc.radius = pegR;
+                cc.sharedMaterial = pegMat;
+
+                // Visual (circle sprite)
+                var vis = new GameObject("V");
+                vis.transform.SetParent(peg.transform, false);
+                vis.transform.localScale = Vector3.one * (pegR * 2f);
+                var sr = vis.AddComponent<SpriteRenderer>();
+                sr.sprite = MakeCircleSprite(32);
+                sr.color  = new Color(0.122f, 0.435f, 0.922f); // #1f6feb
+                sr.sortingOrder = 2;
+            }
+        }
     }
 
     // ── Pockets ──────────────────────────────────────────────
     Pocket[] BuildPockets()
     {
-        float pw = HALF_W * 2f / POCKETS;
-        var list = new Pocket[POCKETS];
+        float pw   = HALF_W * 2f / NPOCKETS;
+        var   list = new Pocket[NPOCKETS];
 
-        for (int i = 0; i < POCKETS; i++)
+        for (int i = 0; i < NPOCKETS; i++)
         {
-            float x = -HALF_W + pw * 0.5f + pw * i;
-            bool isRed = (i % 2 == 0);
-            Color col = isRed ? new Color(0.75f, 0.1f, 0.1f) : new Color(0.15f, 0.15f, 0.15f);
+            float cx = -HALF_W + pw * 0.5f + pw * i;
 
             var pObj = new GameObject($"Pocket_{i}");
-            pObj.transform.position = new Vector3(x, POCKET_Y, 0);
+            pObj.transform.position = new Vector3(cx, POCKET_Y, 0);
 
-            // Trigger collider (ball detection)
-            var trigger = pObj.AddComponent<BoxCollider2D>();
-            trigger.isTrigger = true;
-            trigger.size = new Vector2(pw - 0.15f, 0.65f);
+            // Single trigger: ball detection & OnMouseDown both work on triggers
+            var trig = pObj.AddComponent<BoxCollider2D>();
+            trig.isTrigger = true;
+            trig.size = new Vector2(pw - 0.08f, POCKET_H);
 
-            // Click collider (mouse input) — same size, not trigger
-            var click = pObj.AddComponent<BoxCollider2D>();
-            click.size = new Vector2(pw - 0.15f, 0.65f);
-
-            // Visual child
-            var vis = MakeQuad($"Vis_{i}", new Vector3(x, POCKET_Y, 0),
-                new Vector2(pw - 0.17f, 0.62f), col, 1);
+            // Background visual (dim by default)
+            var vis = MakeQuad($"PocketVis_{i}",
+                new Vector3(cx, POCKET_Y, 0),
+                new Vector2(pw - 0.1f, POCKET_H - 0.02f),
+                PocketColors[i] * 0.25f, 1);
 
             var pocket = pObj.AddComponent<Pocket>();
-            pocket.Initialize(i, Multipliers[i], isRed);
+            pocket.Initialize(i, PocketMults[i], PocketColors[i],
+                vis.GetComponent<SpriteRenderer>());
             list[i] = pocket;
         }
         return list;
@@ -135,33 +185,34 @@ public class GameBootstrap : MonoBehaviour
     // ── Ball ─────────────────────────────────────────────────
     void SpawnBall()
     {
+        // Slight random x offset, same as HTML5
+        float rx = (Random.value - 0.5f) * 0.67f;
         var ball = new GameObject("Ball");
-        ball.transform.position = new Vector3(0, ARENA_TOP - 0.8f, 0);
+        ball.transform.position = new Vector3(rx, ARENA_TOP - 0.5f, 0);
         ball.AddComponent<Rigidbody2D>();
         ball.AddComponent<CircleCollider2D>();
         ball.AddComponent<Ball>();
     }
 
     // ── Helpers ──────────────────────────────────────────────
-    void MakeWall(string name, Vector3 pos, Vector2 size, PhysicsMaterial2D mat,
-        Color? color = null)
+    void MakeWall(string name, Vector3 pos, Vector2 size, Color? col = null)
     {
         var obj = new GameObject(name);
         obj.transform.position = pos;
-        var col = obj.AddComponent<BoxCollider2D>();
-        col.size = size;
-        col.sharedMaterial = mat;
-        MakeQuad(name + "_V", pos, size, color ?? new Color(0.5f, 0.35f, 0.1f), 1);
+        var bc = obj.AddComponent<BoxCollider2D>();
+        bc.size = size;
+        bc.sharedMaterial = _bounceMat;
+        MakeQuad(name + "_V", pos, size, col ?? new Color(0.19f, 0.21f, 0.24f), 1);
     }
 
     static GameObject MakeQuad(string name, Vector3 pos, Vector2 size, Color color, int order)
     {
         var obj = new GameObject(name);
-        obj.transform.position = pos;
+        obj.transform.position   = pos;
         obj.transform.localScale = new Vector3(size.x, size.y, 1f);
         var sr = obj.AddComponent<SpriteRenderer>();
-        sr.sprite = GetPixelSprite();
-        sr.color = color;
+        sr.sprite       = GetPixelSprite();
+        sr.color        = color;
         sr.sortingOrder = order;
         return obj;
     }
@@ -174,5 +225,20 @@ public class GameBootstrap : MonoBehaviour
         tex.Apply();
         _pixel = Sprite.Create(tex, new Rect(0, 0, 1, 1), Vector2.one * 0.5f, 1f);
         return _pixel;
+    }
+
+    static Sprite MakeCircleSprite(int res)
+    {
+        var   tex = new Texture2D(res, res, TextureFormat.ARGB32, false);
+        float r   = res * 0.5f;
+        for (int y = 0; y < res; y++)
+            for (int x = 0; x < res; x++)
+            {
+                float dx = x - r + 0.5f, dy = y - r + 0.5f;
+                float a  = Mathf.Clamp01(r - Mathf.Sqrt(dx * dx + dy * dy));
+                tex.SetPixel(x, y, new Color(1, 1, 1, a));
+            }
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, res, res), Vector2.one * 0.5f, res);
     }
 }
