@@ -92,7 +92,7 @@ public class UIController : MonoBehaviour
         AddOutline(coinsBox, C_BORDER);
         NewTxt(coinsBox, "🪙  COINS",
                Anc(0f,0.5f,0f,0.5f), new Vector2(8,0), new Vector2(90,30),
-               11, C_GREY, TextAnchor.MiddleLeft);
+               11, C_GREY, FontStyle.Normal, TextAnchor.MiddleLeft);
         _coinsText = NewTxt(coinsBox, "100",
                Anc(1f,0.5f,1f,0.5f), new Vector2(-8,0), new Vector2(60,30),
                20, C_GOLD, FontStyle.Bold, TextAnchor.MiddleRight);
