@@ -417,7 +417,8 @@ public class UIController : MonoBehaviour
     static RectTransform SetRT(GameObject go, Vector2 ancMin, Vector2 ancMax,
         Vector2 pivot, Vector2 anchoredPos, Vector2 sizeDelta)
     {
-        var rt = go.GetComponent<RectTransform>() ?? go.AddComponent<RectTransform>();
+        var rt = go.GetComponent<RectTransform>();
+        if (rt == null) rt = go.AddComponent<RectTransform>();
         rt.anchorMin        = ancMin;
         rt.anchorMax        = ancMax;
         rt.pivot            = pivot;
