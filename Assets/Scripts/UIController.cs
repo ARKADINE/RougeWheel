@@ -137,7 +137,7 @@ public class UIController : MonoBehaviour
         // Container: pivot=(0.5,1) so top aligns with y
         _betSection = NewGO("BetSection", panel);
         SetRT(_betSection, Anc(0.5f,1,0.5f,1).min, Anc(0.5f,1,0.5f,1).max,
-              new Vector2(0.5f,1), new Vector2(0,y), new Vector2(184,315));
+              new Vector2(0.5f,1), new Vector2(0,y), new Vector2(184,262));
 
         // "ポケット選択" label (y from top: 4)
         NewTxt(_betSection, "ポケット選択",
@@ -174,33 +174,73 @@ public class UIController : MonoBehaviour
             _pocketBtns[i] = b;
         }
 
-        // Bet amount row (top: 106)
-        NewTxt(_betSection, "ベット額",
-               Anc(0f,1,0f,1), new Vector2(4,-108), new Vector2(80,14),
-               10, C_GREY);
-        _betAmtText = NewTxt(_betSection, "10",
-               Anc(1f,1,1f,1), new Vector2(-4,-108), new Vector2(50,14),
-               14, C_GOLD, FontStyle.Bold, TextAnchor.MiddleRight);
+        // Separator before bet section
+        var betDiv = NewGO("BetDiv", _betSection);
+        SetRT(betDiv, new Vector2(0.05f,1), new Vector2(0.95f,1),
+              new Vector2(0.5f,1), new Vector2(0,-110), new Vector2(0,1));
+        NewImg(betDiv, C_BORDER);
 
-        // − / + buttons
-        var minusBox = NewBox(_betSection, Anc(0f,1,0f,1), new Vector2(4,-132),
-                             new Vector2(38,26), new Color(0.13f,0.15f,0.18f));
+        // Bet amount label + range hint
+        NewTxt(_betSection, "ベット額",
+               Anc(0f,1,0f,1), new Vector2(4,-118), new Vector2(80,14),
+               10, C_GREY);
+        NewTxt(_betSection, "5〜50",
+               Anc(1f,1,1f,1), new Vector2(-4,-118), new Vector2(44,14),
+               9, C_DIM, FontStyle.Normal, TextAnchor.MiddleRight);
+
+        // Centered stepper: [−] [amount] [+]
+        float stepY  = -140f;
+        float stepBW = 34f, stepBH = 32f, amtW = 64f;
+        float stepSp = (amtW + stepBW) * 0.5f + 4f; // spacing from center
+
+        var amtBox = NewBox(_betSection, Anc(0.5f,1,0.5f,1),
+                           new Vector2(0, stepY), new Vector2(amtW, stepBH), BG_DARK);
+        AddOutline(amtBox, C_BORDER);
+        _betAmtText = NewTxt(amtBox, "10",
+               Anc(0.5f,0.5f,0.5f,0.5f), Vector2.zero, new Vector2(amtW, stepBH),
+               18, C_GOLD, FontStyle.Bold, TextAnchor.MiddleCenter);
+
+        var minusBox = NewBox(_betSection, Anc(0.5f,1,0.5f,1),
+                             new Vector2(-stepSp, stepY), new Vector2(stepBW, stepBH),
+                             new Color(0.13f,0.15f,0.18f));
         AddOutline(minusBox, C_BORDER);
         var mb = minusBox.AddComponent<Button>(); mb.targetGraphic = minusBox.GetComponent<Image>();
         mb.onClick.AddListener(OnBetMinus);
         NewTxt(minusBox, "−", Anc(0.5f,0.5f,0.5f,0.5f), Vector2.zero,
-               new Vector2(38,26), 16, C_LIGHT, FontStyle.Bold, TextAnchor.MiddleCenter);
+               new Vector2(stepBW, stepBH), 18, C_LIGHT, FontStyle.Bold, TextAnchor.MiddleCenter);
 
-        var plusBox = NewBox(_betSection, Anc(1f,1,1f,1), new Vector2(-4,-132),
-                            new Vector2(38,26), new Color(0.13f,0.15f,0.18f));
+        var plusBox = NewBox(_betSection, Anc(0.5f,1,0.5f,1),
+                            new Vector2(stepSp, stepY), new Vector2(stepBW, stepBH),
+                            new Color(0.13f,0.15f,0.18f));
         AddOutline(plusBox, C_BORDER);
         var pb = plusBox.AddComponent<Button>(); pb.targetGraphic = plusBox.GetComponent<Image>();
         pb.onClick.AddListener(OnBetPlus);
         NewTxt(plusBox, "+", Anc(0.5f,0.5f,0.5f,0.5f), Vector2.zero,
-               new Vector2(38,26), 16, C_LIGHT, FontStyle.Bold, TextAnchor.MiddleCenter);
+               new Vector2(stepBW, stepBH), 18, C_LIGHT, FontStyle.Bold, TextAnchor.MiddleCenter);
 
-        // Confirm button (top: 170)
-        var confBox = NewBox(_betSection, Anc(0.5f,1,0.5f,1), new Vector2(0,-175),
+        // Quick bet presets: 5 / 10 / 25 / 50
+        int[] presets = { 5, 10, 25, 50 };
+        float pbW = 37f, pbH = 24f, pbGap = 4f;
+        float presetTotal = pbW * presets.Length + pbGap * (presets.Length - 1);
+        float presetStartX = -presetTotal * 0.5f + pbW * 0.5f;
+        for (int pi = 0; pi < presets.Length; pi++)
+        {
+            int   amt = presets[pi];
+            float px  = presetStartX + pi * (pbW + pbGap);
+            var preBox = NewBox(_betSection, Anc(0.5f,1,0.5f,1),
+                               new Vector2(px, -182f), new Vector2(pbW, pbH),
+                               new Color(0.13f,0.15f,0.18f));
+            AddOutline(preBox, C_BORDER);
+            var preBtn = preBox.AddComponent<Button>();
+            preBtn.targetGraphic = preBox.GetComponent<Image>();
+            preBtn.onClick.AddListener(() => OnBetPreset(amt));
+            NewTxt(preBox, $"{amt}",
+                   Anc(0.5f,0.5f,0.5f,0.5f), Vector2.zero,
+                   new Vector2(pbW, pbH), 11, C_GREY, FontStyle.Normal, TextAnchor.MiddleCenter);
+        }
+
+        // Confirm button
+        var confBox = NewBox(_betSection, Anc(0.5f,1,0.5f,1), new Vector2(0,-218),
                             new Vector2(176,36), new Color(C_RED.r,C_RED.g,C_RED.b,0.35f));
         _confirmBtn = confBox.AddComponent<Button>();
         _confirmBtn.targetGraphic = confBox.GetComponent<Image>();
@@ -378,6 +418,13 @@ public class UIController : MonoBehaviour
     void OnBetPlus()
     {
         _betAmount = Mathf.Min(50, _betAmount + 5);
+        _gm.SetBetAmount(_betAmount);
+        _betAmtText.text = _betAmount.ToString();
+    }
+
+    void OnBetPreset(int amount)
+    {
+        _betAmount = amount;
         _gm.SetBetAmount(_betAmount);
         _betAmtText.text = _betAmount.ToString();
     }
