@@ -106,10 +106,10 @@ public class UIController : MonoBehaviour
                Anc(0.5f,0.5f,0.5f,0.5f), Vector2.zero, new Vector2(178,22),
                11, C_GREY, FontStyle.Normal, TextAnchor.MiddleCenter);
 
-        // ── Content sections (top = 140px from panel top) ──────
+        // ── Content sections (top = 152px from panel top) ──────
         // All three sections share the same top anchor position.
-        // They use pivot=(0.5,1) so anchoredPosition.y = -140 aligns their TOP.
-        float sectY = -140f;
+        // They use pivot=(0.5,1) so anchoredPosition.y = -152 aligns their TOP.
+        float sectY = -152f;
 
         BuildBetSection(panel, sectY);
         BuildPlaceSection(panel, sectY);
@@ -118,14 +118,14 @@ public class UIController : MonoBehaviour
         // ── Hint text (pinned to bottom) ───────────────────────
         var hintBox = NewGO("HintBox", panel);
         SetRT(hintBox, new Vector2(0,0), new Vector2(1,0),
-              new Vector2(0.5f,0), new Vector2(0,8), new Vector2(-16,72));
+              new Vector2(0.5f,0), new Vector2(0,8), new Vector2(-16,80));
         var hintLine = NewGO("HintTop", hintBox);
         SetRT(hintLine, new Vector2(0,1), new Vector2(1,1),
               new Vector2(0.5f,1), Vector2.zero, new Vector2(0,1));
-        NewImg(hintLine, new Color(0.13f,0.15f,0.18f));
+        NewImg(hintLine, new Color(0.20f,0.22f,0.26f));
         _hintText = NewTxt(hintBox, "ポケットを選んでベットしよう！",
-               Anc(0.5f,0.5f,0.5f,0.5f), new Vector2(2,-2), new Vector2(174,68),
-               10, C_DIM, FontStyle.Normal, TextAnchor.UpperLeft);
+               Anc(0.5f,0.5f,0.5f,0.5f), new Vector2(2,-2), new Vector2(174,74),
+               11, C_GREY, FontStyle.Normal, TextAnchor.UpperLeft);
 
         _betSection.SetActive(false);
         _placeSection.SetActive(false);
@@ -133,84 +133,83 @@ public class UIController : MonoBehaviour
     }
 
     // ── BET section ───────────────────────────────────────────
-    // All NewBox pos.y = center y (pivot=0.5,0.5).
-    // NewTxt pos.y = top y (pivot top when anc.min.y==1).
     // Layout (px from section top):
-    //   4-18   "ポケット選択" label
-    //  22-62   Pocket row 0
-    //  66-106  Pocket row 1
-    //  112     Separator
-    //  120-134 "ベット額" label
-    //  138-170 Stepper [−][10][+]    center=154
-    //  178-202 Presets [5][10][25][50] center=190
-    //  212-248 Confirm button          center=230
+    //  12-26   "ポケット選択" label
+    //  30-74   Pocket row 0  (bh=44)
+    //  80-124  Pocket row 1
+    //  144     Separator
+    //  162-176 "ベット額" label
+    //  186-224 Stepper [−][10][+]    center=205
+    //  244-272 Presets [5][10][25][50] center=258
+    //  294     Second separator
+    //  330-378 Confirm button          center=354
     void BuildBetSection(GameObject panel, float y)
     {
         _betSection = NewGO("BetSection", panel);
         SetRT(_betSection, Anc(0.5f,1,0.5f,1).min, Anc(0.5f,1,0.5f,1).max,
-              new Vector2(0.5f,1), new Vector2(0,y), new Vector2(184,256));
+              new Vector2(0.5f,1), new Vector2(0,y), new Vector2(184,400));
 
-        // "ポケット選択" label (top=4)
+        // "ポケット選択" label (top=12)
         NewTxt(_betSection, "ポケット選択",
-               Anc(0f,1,0f,1), new Vector2(4,-4), new Vector2(176,14),
+               Anc(0f,1,0f,1), new Vector2(4,-12), new Vector2(176,14),
                10, C_GREY);
 
         // Pocket grid: 2 rows × 3 cols
-        // Row centers: y=42 (row0), y=86 (row1)  → by = -(22 + row*44 + 20)
+        // Row centers: y=52 (row0), y=102 (row1)
         _pocketBtns = new Button[_pockets.Length];
-        float bw = 56f, bh = 40f, gap = 4f;
-        float gridW = bw * 3 + gap * 2; // 176
+        float bw = 56f, bh = 44f, gap = 6f;
+        float gridW = bw * 3 + gap * 2; // 180
         for (int i = 0; i < _pockets.Length; i++)
         {
             int   col = i % 3, row = i / 3;
             float bx  = -gridW * 0.5f + bw * 0.5f + col * (bw + gap);
-            float by  = -(22f + row * (bh + gap) + bh * 0.5f); // center y
+            float by  = -(30f + row * (bh + gap) + bh * 0.5f); // center y
             Color pc  = _pocketColors[i];
             int   cap = i;
 
             var btn = NewBox(_betSection, Anc(0.5f,1,0.5f,1),
                             new Vector2(bx, by), new Vector2(bw, bh),
-                            new Color(pc.r, pc.g, pc.b, 0.12f));
-            AddOutline(btn, new Color(pc.r,pc.g,pc.b,0.45f));
+                            new Color(pc.r, pc.g, pc.b, 0.15f));
+            AddOutline(btn, new Color(pc.r,pc.g,pc.b,0.55f));
             var b = btn.AddComponent<Button>();
             b.targetGraphic = btn.GetComponent<Image>();
             b.onClick.AddListener(() => OnPocketBtnClick(cap));
 
             NewTxt(btn, $"{i+1}",
-                   Anc(0.5f,1,0.5f,1), new Vector2(0,-5), new Vector2(bw,18),
-                   12, C_LIGHT, FontStyle.Bold, TextAnchor.MiddleCenter);
+                   Anc(0.5f,1,0.5f,1), new Vector2(0,-5), new Vector2(bw,20),
+                   13, C_LIGHT, FontStyle.Bold, TextAnchor.MiddleCenter);
             NewTxt(btn, $"×{_pockets[i].Multiplier}",
-                   Anc(0.5f,0,0.5f,0), new Vector2(0,6), new Vector2(bw,14),
-                   9, C_GREY, FontStyle.Normal, TextAnchor.MiddleCenter);
+                   Anc(0.5f,0,0.5f,0), new Vector2(0,6), new Vector2(bw,16),
+                   10, C_GREY, FontStyle.Normal, TextAnchor.MiddleCenter);
 
             _pocketBtns[i] = b;
         }
 
-        // Separator (top=112, after row1 bottom=106)
+        // Separator (top=144, after row1 bottom=124+20gap)
         var betDiv = NewGO("BetDiv", _betSection);
         SetRT(betDiv, new Vector2(0.05f,1), new Vector2(0.95f,1),
-              new Vector2(0.5f,1), new Vector2(0,-112), new Vector2(0,1));
+              new Vector2(0.5f,1), new Vector2(0,-144), new Vector2(0,1));
         NewImg(betDiv, C_BORDER);
 
-        // "ベット額" label + range hint (top=120)
+        // "ベット額" label + range hint (top=162)
         NewTxt(_betSection, "ベット額",
-               Anc(0f,1,0f,1), new Vector2(4,-120), new Vector2(80,14),
+               Anc(0f,1,0f,1), new Vector2(4,-162), new Vector2(80,14),
                10, C_GREY);
         NewTxt(_betSection, "5〜50",
-               Anc(1f,1,1f,1), new Vector2(-4,-120), new Vector2(44,14),
+               Anc(1f,1,1f,1), new Vector2(-4,-162), new Vector2(44,14),
                9, C_DIM, FontStyle.Normal, TextAnchor.MiddleRight);
 
-        // Centered stepper [−] [amount] [+] (center=154, top=138, bottom=170)
-        float stepBW = 34f, stepBH = 32f, amtW = 64f;
+        // Centered stepper [−] [amount] [+] (center=205)
+        float stepBW = 34f, stepBH = 36f, amtW = 64f;
         float stepSp = (amtW + stepBW) * 0.5f + 4f; // = 53
-        const float stepCY = -154f;
+        const float stepCY = -205f;
 
         var amtBox = NewBox(_betSection, Anc(0.5f,1,0.5f,1),
                            new Vector2(0, stepCY), new Vector2(amtW, stepBH), BG_DARK);
         AddOutline(amtBox, C_BORDER);
         _betAmtText = NewTxt(amtBox, "10",
                Anc(0.5f,0.5f,0.5f,0.5f), Vector2.zero, new Vector2(amtW, stepBH),
-               18, C_GOLD, FontStyle.Bold, TextAnchor.MiddleCenter);
+               20, C_GOLD, FontStyle.Bold, TextAnchor.MiddleCenter);
 
         var minusBox = NewBox(_betSection, Anc(0.5f,1,0.5f,1),
                              new Vector2(-stepSp, stepCY), new Vector2(stepBW, stepBH),
@@ -219,7 +218,7 @@ public class UIController : MonoBehaviour
         var mb = minusBox.AddComponent<Button>(); mb.targetGraphic = minusBox.GetComponent<Image>();
         mb.onClick.AddListener(OnBetMinus);
         NewTxt(minusBox, "−", Anc(0.5f,0.5f,0.5f,0.5f), Vector2.zero,
-               new Vector2(stepBW, stepBH), 18, C_LIGHT, FontStyle.Bold, TextAnchor.MiddleCenter);
+               new Vector2(stepBW, stepBH), 20, C_LIGHT, FontStyle.Bold, TextAnchor.MiddleCenter);
 
         var plusBox = NewBox(_betSection, Anc(0.5f,1,0.5f,1),
                             new Vector2(stepSp, stepCY), new Vector2(stepBW, stepBH),
@@ -228,18 +227,18 @@ public class UIController : MonoBehaviour
         var pb = plusBox.AddComponent<Button>(); pb.targetGraphic = plusBox.GetComponent<Image>();
         pb.onClick.AddListener(OnBetPlus);
         NewTxt(plusBox, "+", Anc(0.5f,0.5f,0.5f,0.5f), Vector2.zero,
-               new Vector2(stepBW, stepBH), 18, C_LIGHT, FontStyle.Bold, TextAnchor.MiddleCenter);
+               new Vector2(stepBW, stepBH), 20, C_LIGHT, FontStyle.Bold, TextAnchor.MiddleCenter);
 
-        // Quick bet presets [5][10][25][50] (center=190, top=178, bottom=202)
+        // Quick bet presets [5][10][25][50] (center=258)
         int[] presets = { 5, 10, 25, 50 };
-        float pbW = 37f, pbH = 24f, pbGap = 4f;
+        float pbW = 37f, pbH = 28f, pbGap = 4f;
         float presetStartX = -(pbW * presets.Length + pbGap * (presets.Length - 1)) * 0.5f + pbW * 0.5f;
         for (int pi = 0; pi < presets.Length; pi++)
         {
             int   amt = presets[pi];
             float px  = presetStartX + pi * (pbW + pbGap);
             var preBox = NewBox(_betSection, Anc(0.5f,1,0.5f,1),
-                               new Vector2(px, -190f), new Vector2(pbW, pbH),
+                               new Vector2(px, -258f), new Vector2(pbW, pbH),
                                new Color(0.13f,0.15f,0.18f));
             AddOutline(preBox, C_BORDER);
             var preBtn = preBox.AddComponent<Button>();
@@ -250,15 +249,21 @@ public class UIController : MonoBehaviour
                    new Vector2(pbW, pbH), 11, C_GREY, FontStyle.Normal, TextAnchor.MiddleCenter);
         }
 
-        // Confirm button (center=230, top=212, bottom=248)
-        var confBox = NewBox(_betSection, Anc(0.5f,1,0.5f,1), new Vector2(0,-230),
-                            new Vector2(176,36), new Color(C_RED.r,C_RED.g,C_RED.b,0.35f));
+        // Second separator (top=294, before confirm)
+        var betDiv2 = NewGO("BetDiv2", _betSection);
+        SetRT(betDiv2, new Vector2(0.05f,1), new Vector2(0.95f,1),
+              new Vector2(0.5f,1), new Vector2(0,-294), new Vector2(0,1));
+        NewImg(betDiv2, C_BORDER);
+
+        // Confirm button (center=354, top=330, bottom=378)
+        var confBox = NewBox(_betSection, Anc(0.5f,1,0.5f,1), new Vector2(0,-354),
+                            new Vector2(176,48), new Color(C_RED.r,C_RED.g,C_RED.b,0.35f));
         _confirmBtn = confBox.AddComponent<Button>();
         _confirmBtn.targetGraphic = confBox.GetComponent<Image>();
         _confirmBtn.interactable  = false;
         _confirmBtn.onClick.AddListener(() => _gm.ConfirmBet());
         NewTxt(confBox, "ベット確定", Anc(0.5f,0.5f,0.5f,0.5f), Vector2.zero,
-               new Vector2(176,36), 13, Color.white, FontStyle.Bold, TextAnchor.MiddleCenter);
+               new Vector2(176,48), 14, Color.white, FontStyle.Bold, TextAnchor.MiddleCenter);
 
         var cColors = _confirmBtn.colors;
         cColors.normalColor      = new Color(C_RED.r, C_RED.g, C_RED.b, 0.35f);
@@ -273,35 +278,35 @@ public class UIController : MonoBehaviour
     {
         _placeSection = NewGO("PlaceSection", panel);
         SetRT(_placeSection, Anc(0.5f,1,0.5f,1).min, Anc(0.5f,1,0.5f,1).max,
-              new Vector2(0.5f,1), new Vector2(0,y), new Vector2(184,230));
+              new Vector2(0.5f,1), new Vector2(0,y), new Vector2(184,300));
 
         NewTxt(_placeSection, "壁を配置",
-               Anc(0f,1,0f,1), new Vector2(4,-4), new Vector2(176,14), 10, C_GREY);
+               Anc(0f,1,0f,1), new Vector2(4,-12), new Vector2(176,14), 10, C_GREY);
 
-        // Info box (top: 22)
-        var infoBox = NewBox(_placeSection, Anc(0.5f,1,0.5f,1), new Vector2(0,-56),
-                            new Vector2(178,68), BG_DARK);
+        // Info box (top: 34)
+        var infoBox = NewBox(_placeSection, Anc(0.5f,1,0.5f,1), new Vector2(0,-80),
+                            new Vector2(178,92), BG_DARK);
         AddOutline(infoBox, C_BORDER);
         _wallCountText = NewTxt(infoBox, "配置: 0 / 3 本\nドラッグ: 壁を引く\n右クリック: 最後の壁を削除",
-               Anc(0.5f,0.5f,0.5f,0.5f), new Vector2(4,0), new Vector2(164,60),
+               Anc(0.5f,0.5f,0.5f,0.5f), new Vector2(4,0), new Vector2(164,82),
                11, C_GREY, FontStyle.Normal, TextAnchor.UpperLeft);
 
-        // Launch button (top: 100)
-        var launchBox = NewBox(_placeSection, Anc(0.5f,1,0.5f,1), new Vector2(0,-118),
-                              new Vector2(176,36), C_RED);
+        // Launch button (center: 162)
+        var launchBox = NewBox(_placeSection, Anc(0.5f,1,0.5f,1), new Vector2(0,-162),
+                              new Vector2(176,44), C_RED);
         var lb = launchBox.AddComponent<Button>(); lb.targetGraphic = launchBox.GetComponent<Image>();
         lb.onClick.AddListener(() => _gm.LaunchBall());
         NewTxt(launchBox, "発射！", Anc(0.5f,0.5f,0.5f,0.5f), Vector2.zero,
-               new Vector2(176,36), 14, Color.white, FontStyle.Bold, TextAnchor.MiddleCenter);
+               new Vector2(176,44), 15, Color.white, FontStyle.Bold, TextAnchor.MiddleCenter);
 
-        // Clear button (top: 144)
-        var clearBox = NewBox(_placeSection, Anc(0.5f,1,0.5f,1), new Vector2(0,-160),
-                             new Vector2(176,32), new Color(0.13f,0.15f,0.18f));
+        // Clear button (center: 224)
+        var clearBox = NewBox(_placeSection, Anc(0.5f,1,0.5f,1), new Vector2(0,-224),
+                             new Vector2(176,36), new Color(0.13f,0.15f,0.18f));
         AddOutline(clearBox, C_BORDER);
         var cb = clearBox.AddComponent<Button>(); cb.targetGraphic = clearBox.GetComponent<Image>();
         cb.onClick.AddListener(() => _gm.ClearAllPlaced());
         NewTxt(clearBox, "壁リセット", Anc(0.5f,0.5f,0.5f,0.5f), Vector2.zero,
-               new Vector2(176,32), 12, C_GREY, FontStyle.Normal, TextAnchor.MiddleCenter);
+               new Vector2(176,36), 12, C_GREY, FontStyle.Normal, TextAnchor.MiddleCenter);
     }
 
     // ── RESULT section ────────────────────────────────────────
@@ -309,21 +314,21 @@ public class UIController : MonoBehaviour
     {
         _resultSection = NewGO("ResultSection", panel);
         SetRT(_resultSection, Anc(0.5f,1,0.5f,1).min, Anc(0.5f,1,0.5f,1).max,
-              new Vector2(0.5f,1), new Vector2(0,y), new Vector2(184,200));
+              new Vector2(0.5f,1), new Vector2(0,y), new Vector2(184,260));
 
-        var resBox = NewBox(_resultSection, Anc(0.5f,1,0.5f,1), new Vector2(0,-48),
-                           new Vector2(178,90), BG_DARK);
+        var resBox = NewBox(_resultSection, Anc(0.5f,1,0.5f,1), new Vector2(0,-70),
+                           new Vector2(178,124), BG_DARK);
         AddOutline(resBox, C_BORDER);
         _resultText = NewTxt(resBox, "",
-               Anc(0.5f,0.5f,0.5f,0.5f), Vector2.zero, new Vector2(164,84),
+               Anc(0.5f,0.5f,0.5f,0.5f), Vector2.zero, new Vector2(164,112),
                13, Color.white, FontStyle.Normal, TextAnchor.MiddleCenter);
 
-        var nextBox = NewBox(_resultSection, Anc(0.5f,1,0.5f,1), new Vector2(0,-116),
-                            new Vector2(176,36), C_RED);
+        var nextBox = NewBox(_resultSection, Anc(0.5f,1,0.5f,1), new Vector2(0,-168),
+                            new Vector2(176,48), C_RED);
         _nextBtn = nextBox.AddComponent<Button>(); _nextBtn.targetGraphic = nextBox.GetComponent<Image>();
         _nextBtn.onClick.AddListener(() => _gm.NextRound());
         NewTxt(nextBox, "次のラウンド", Anc(0.5f,0.5f,0.5f,0.5f), Vector2.zero,
-               new Vector2(176,36), 13, Color.white, FontStyle.Bold, TextAnchor.MiddleCenter);
+               new Vector2(176,48), 14, Color.white, FontStyle.Bold, TextAnchor.MiddleCenter);
     }
 
     // ── Phase / Coins / Result callbacks ─────────────────────
@@ -411,10 +416,10 @@ public class UIController : MonoBehaviour
             bool sel = i == _gm.SelectedPocket;
             Color pc = _pocketColors[i];
             var img  = _pocketBtns[i].GetComponent<Image>();
-            if (img) img.color = new Color(pc.r, pc.g, pc.b, sel ? 0.35f : 0.12f);
+            if (img) img.color = new Color(pc.r, pc.g, pc.b, sel ? 0.40f : 0.15f);
             // Border outline color
             var outline = _pocketBtns[i].GetComponent<Outline>();
-            if (outline) outline.effectColor = new Color(pc.r, pc.g, pc.b, sel ? 1f : 0.45f);
+            if (outline) outline.effectColor = new Color(pc.r, pc.g, pc.b, sel ? 1f : 0.55f);
         }
     }
 
