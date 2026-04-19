@@ -106,10 +106,10 @@ public class UIController : MonoBehaviour
                Anc(0.5f,0.5f,0.5f,0.5f), Vector2.zero, new Vector2(178,22),
                11, C_GREY, FontStyle.Normal, TextAnchor.MiddleCenter);
 
-        // ── Content sections (top = 152px from panel top) ──────
+        // ── Content sections (top = 160px from panel top) ──────
         // All three sections share the same top anchor position.
-        // They use pivot=(0.5,1) so anchoredPosition.y = -152 aligns their TOP.
-        float sectY = -152f;
+        // They use pivot=(0.5,1) so anchoredPosition.y = -160 aligns their TOP.
+        float sectY = -160f;
 
         BuildBetSection(panel, sectY);
         BuildPlaceSection(panel, sectY);
@@ -134,28 +134,28 @@ public class UIController : MonoBehaviour
 
     // ── BET section ───────────────────────────────────────────
     // Layout (px from section top):
-    //  12-26   "ポケット選択" label
-    //  30-74   Pocket row 0  (bh=44)
-    //  80-124  Pocket row 1
-    //  144     Separator
-    //  162-176 "ベット額" label
-    //  186-224 Stepper [−][10][+]    center=205
-    //  244-272 Presets [5][10][25][50] center=258
-    //  294     Second separator
-    //  330-378 Confirm button          center=354
+    //  18-32   "ポケット選択" label
+    //  38-82   Pocket row 0  (bh=44)  center=60
+    //  90-134  Pocket row 1           center=112
+    //  160     Separator
+    //  180-194 "ベット額" label
+    //  212-248 Stepper [−][10][+]     center=230
+    //  256-284 Presets [5][10][25][50] center=270
+    //  310     Second separator
+    //  352-400 Confirm button          center=376
     void BuildBetSection(GameObject panel, float y)
     {
         _betSection = NewGO("BetSection", panel);
         SetRT(_betSection, Anc(0.5f,1,0.5f,1).min, Anc(0.5f,1,0.5f,1).max,
-              new Vector2(0.5f,1), new Vector2(0,y), new Vector2(184,400));
+              new Vector2(0.5f,1), new Vector2(0,y), new Vector2(184,430));
 
-        // "ポケット選択" label (top=12)
+        // "ポケット選択" label (top=18)
         NewTxt(_betSection, "ポケット選択",
-               Anc(0f,1,0f,1), new Vector2(4,-12), new Vector2(176,14),
+               Anc(0f,1,0f,1), new Vector2(4,-18), new Vector2(176,14),
                10, C_GREY);
 
         // Pocket grid: 2 rows × 3 cols
-        // Row centers: y=52 (row0), y=102 (row1)
+        // Row centers: y=60 (row0), y=112 (row1)
         _pocketBtns = new Button[_pockets.Length];
         float bw = 56f, bh = 44f, gap = 6f;
         float gridW = bw * 3 + gap * 2; // 180
@@ -163,7 +163,7 @@ public class UIController : MonoBehaviour
         {
             int   col = i % 3, row = i / 3;
             float bx  = -gridW * 0.5f + bw * 0.5f + col * (bw + gap);
-            float by  = -(30f + row * (bh + gap) + bh * 0.5f); // center y
+            float by  = -(38f + row * (bh + gap) + bh * 0.5f); // center y
             Color pc  = _pocketColors[i];
             int   cap = i;
 
@@ -185,24 +185,24 @@ public class UIController : MonoBehaviour
             _pocketBtns[i] = b;
         }
 
-        // Separator (top=144, after row1 bottom=124+20gap)
+        // Separator (top=160, after row1 bottom=134+26gap)
         var betDiv = NewGO("BetDiv", _betSection);
         SetRT(betDiv, new Vector2(0.05f,1), new Vector2(0.95f,1),
-              new Vector2(0.5f,1), new Vector2(0,-144), new Vector2(0,1));
+              new Vector2(0.5f,1), new Vector2(0,-160), new Vector2(0,1));
         NewImg(betDiv, C_BORDER);
 
-        // "ベット額" label + range hint (top=162)
+        // "ベット額" label + range hint (top=180)
         NewTxt(_betSection, "ベット額",
-               Anc(0f,1,0f,1), new Vector2(4,-162), new Vector2(80,14),
+               Anc(0f,1,0f,1), new Vector2(4,-180), new Vector2(80,14),
                10, C_GREY);
         NewTxt(_betSection, "5〜50",
-               Anc(1f,1,1f,1), new Vector2(-4,-162), new Vector2(44,14),
+               Anc(1f,1,1f,1), new Vector2(-4,-180), new Vector2(44,14),
                9, C_DIM, FontStyle.Normal, TextAnchor.MiddleRight);
 
-        // Centered stepper [−] [amount] [+] (center=205)
+        // Centered stepper [−] [amount] [+] (center=230)
         float stepBW = 34f, stepBH = 36f, amtW = 64f;
         float stepSp = (amtW + stepBW) * 0.5f + 4f; // = 53
-        const float stepCY = -205f;
+        const float stepCY = -230f;
 
         var amtBox = NewBox(_betSection, Anc(0.5f,1,0.5f,1),
                            new Vector2(0, stepCY), new Vector2(amtW, stepBH), BG_DARK);
@@ -229,7 +229,7 @@ public class UIController : MonoBehaviour
         NewTxt(plusBox, "+", Anc(0.5f,0.5f,0.5f,0.5f), Vector2.zero,
                new Vector2(stepBW, stepBH), 20, C_LIGHT, FontStyle.Bold, TextAnchor.MiddleCenter);
 
-        // Quick bet presets [5][10][25][50] (center=258)
+        // Quick bet presets [5][10][25][50] (center=270)
         int[] presets = { 5, 10, 25, 50 };
         float pbW = 37f, pbH = 28f, pbGap = 4f;
         float presetStartX = -(pbW * presets.Length + pbGap * (presets.Length - 1)) * 0.5f + pbW * 0.5f;
@@ -238,7 +238,7 @@ public class UIController : MonoBehaviour
             int   amt = presets[pi];
             float px  = presetStartX + pi * (pbW + pbGap);
             var preBox = NewBox(_betSection, Anc(0.5f,1,0.5f,1),
-                               new Vector2(px, -258f), new Vector2(pbW, pbH),
+                               new Vector2(px, -270f), new Vector2(pbW, pbH),
                                new Color(0.13f,0.15f,0.18f));
             AddOutline(preBox, C_BORDER);
             var preBtn = preBox.AddComponent<Button>();
@@ -249,14 +249,14 @@ public class UIController : MonoBehaviour
                    new Vector2(pbW, pbH), 11, C_GREY, FontStyle.Normal, TextAnchor.MiddleCenter);
         }
 
-        // Second separator (top=294, before confirm)
+        // Second separator (top=310, before confirm)
         var betDiv2 = NewGO("BetDiv2", _betSection);
         SetRT(betDiv2, new Vector2(0.05f,1), new Vector2(0.95f,1),
-              new Vector2(0.5f,1), new Vector2(0,-294), new Vector2(0,1));
+              new Vector2(0.5f,1), new Vector2(0,-310), new Vector2(0,1));
         NewImg(betDiv2, C_BORDER);
 
-        // Confirm button (center=354, top=330, bottom=378)
-        var confBox = NewBox(_betSection, Anc(0.5f,1,0.5f,1), new Vector2(0,-354),
+        // Confirm button (center=376, top=352, bottom=400)
+        var confBox = NewBox(_betSection, Anc(0.5f,1,0.5f,1), new Vector2(0,-376),
                             new Vector2(176,48), new Color(C_RED.r,C_RED.g,C_RED.b,0.35f));
         _confirmBtn = confBox.AddComponent<Button>();
         _confirmBtn.targetGraphic = confBox.GetComponent<Image>();
