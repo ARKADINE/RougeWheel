@@ -137,7 +137,7 @@ public class UIController : MonoBehaviour
         // Container: pivot=(0.5,1) so top aligns with y
         _betSection = NewGO("BetSection", panel);
         SetRT(_betSection, Anc(0.5f,1,0.5f,1).min, Anc(0.5f,1,0.5f,1).max,
-              new Vector2(0.5f,1), new Vector2(0,y), new Vector2(184,262));
+              new Vector2(0.5f,1), new Vector2(0,y), new Vector2(184,310));
 
         // "ポケット選択" label (y from top: 4)
         NewTxt(_betSection, "ポケット選択",
@@ -177,19 +177,19 @@ public class UIController : MonoBehaviour
         // Separator before bet section
         var betDiv = NewGO("BetDiv", _betSection);
         SetRT(betDiv, new Vector2(0.05f,1), new Vector2(0.95f,1),
-              new Vector2(0.5f,1), new Vector2(0,-110), new Vector2(0,1));
+              new Vector2(0.5f,1), new Vector2(0,-154), new Vector2(0,1));
         NewImg(betDiv, C_BORDER);
 
         // Bet amount label + range hint
         NewTxt(_betSection, "ベット額",
-               Anc(0f,1,0f,1), new Vector2(4,-118), new Vector2(80,14),
+               Anc(0f,1,0f,1), new Vector2(4,-162), new Vector2(80,14),
                10, C_GREY);
         NewTxt(_betSection, "5〜50",
-               Anc(1f,1,1f,1), new Vector2(-4,-118), new Vector2(44,14),
+               Anc(1f,1,1f,1), new Vector2(-4,-162), new Vector2(44,14),
                9, C_DIM, FontStyle.Normal, TextAnchor.MiddleRight);
 
         // Centered stepper: [−] [amount] [+]
-        float stepY  = -140f;
+        float stepY  = -184f;
         float stepBW = 34f, stepBH = 32f, amtW = 64f;
         float stepSp = (amtW + stepBW) * 0.5f + 4f; // spacing from center
 
@@ -228,7 +228,7 @@ public class UIController : MonoBehaviour
             int   amt = presets[pi];
             float px  = presetStartX + pi * (pbW + pbGap);
             var preBox = NewBox(_betSection, Anc(0.5f,1,0.5f,1),
-                               new Vector2(px, -182f), new Vector2(pbW, pbH),
+                               new Vector2(px, -226f), new Vector2(pbW, pbH),
                                new Color(0.13f,0.15f,0.18f));
             AddOutline(preBox, C_BORDER);
             var preBtn = preBox.AddComponent<Button>();
@@ -240,7 +240,7 @@ public class UIController : MonoBehaviour
         }
 
         // Confirm button
-        var confBox = NewBox(_betSection, Anc(0.5f,1,0.5f,1), new Vector2(0,-218),
+        var confBox = NewBox(_betSection, Anc(0.5f,1,0.5f,1), new Vector2(0,-262),
                             new Vector2(176,36), new Color(C_RED.r,C_RED.g,C_RED.b,0.35f));
         _confirmBtn = confBox.AddComponent<Button>();
         _confirmBtn.targetGraphic = confBox.GetComponent<Image>();

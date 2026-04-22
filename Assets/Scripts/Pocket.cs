@@ -14,7 +14,7 @@ public class Pocket : MonoBehaviour
         Multiplier  = multiplier;
         PocketColor = color;
         _sr         = sr;
-        if (_sr != null) _sr.color = color * 0.25f; // dim default
+        if (_sr != null) _sr.color = color * 0.5f;
     }
 
     /// <summary>選択中（ベット確定前）の表示</summary>
@@ -28,7 +28,7 @@ public class Pocket : MonoBehaviour
     public void SetResult(bool isResult)
     {
         if (_sr == null) return;
-        _sr.color = isResult ? PocketColor : PocketColor * 0.25f;
+        _sr.color = isResult ? PocketColor : PocketColor * 0.5f;
     }
 
     void OnMouseDown()
