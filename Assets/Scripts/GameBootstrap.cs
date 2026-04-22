@@ -68,8 +68,8 @@ public class GameBootstrap : MonoBehaviour
         cam.orthographic    = true;
         cam.orthographicSize = 5.2f;
         cam.backgroundColor = new Color(0.051f, 0.067f, 0.090f); // #0d1117
-        // Shift left so right side of screen is free for the UI panel
-        cam.transform.position = new Vector3(-1.5f, 0f, -10f);
+        // Shift camera right so arena appears on left, leaving right side free for UI panel
+        cam.transform.position = new Vector3(1.5f, 0f, -10f);
     }
 
     // ── Arena ────────────────────────────────────────────────
